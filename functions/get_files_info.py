@@ -36,8 +36,63 @@ schema_get_files_info = types.FunctionDeclaration(
         },
     ),
 )
+
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Returns the content of the file at the specified path",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties= {
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file whose contents will be returned, relative to the working directory.",
+            )
+        }
+    )
+)
+
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Writes or overwrites the file at the specified path with the provided content",
+    parameters= types.Schema(
+        type=types.Type.OBJECT,
+        properties= {
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description= "The path to the file we wan to write in"
+            ),
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description= "The content we aim to write into the file"
+            )
+        }
+    )
+)
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Attemps to run the python file with the provided file path and optional arguments.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the Python file to execute, relative to the working directory."
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(type=types.Type.STRING),
+                description="Optional list of arguments to pass to the script."
+            ),
+        }
+    )
+)
+
 available_functions = types.Tool(
     function_declarations=[
         schema_get_files_info,
+        schema_get_file_content,
+        schema_run_python_file,
+        schema_write_file
     ]
 )
