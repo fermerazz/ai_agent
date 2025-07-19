@@ -73,27 +73,49 @@ else:
     messages = [
     types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
-    response = client.models.generate_content(
-        model='gemini-2.0-flash-001',
-        contents=messages,
-        config=types.GenerateContentConfig(
-            tools=[available_functions],
-            system_instruction=system_prompt))
-    if response.function_calls:
-        for function in response.function_calls:
-            result = call_function(function, is_verbose)
-            if (result and
-            result.parts and
-            len(result.parts) > 0 and
-            hasattr(result.parts[0], 'function_response') and
-            hasattr(result.parts[0].function_response, 'response')):
-             if is_verbose:
-                print(f"-> {result.parts[0].function_response.response}")
-            else:
-                raise Exception("Unexpected function call result structure!")
+    i = 1
+    while i <= 20:
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.0-flash-001',
+                contents=messages,
+                config=types.GenerateContentConfig(
+                    tools=[available_functions],
+                    system_instruction=system_prompt))
+            if response.candidates:
+                for candidate in response.candidates:
+                    messages.append(candidate.content) 
 
-        if is_verbose:
-            print(f"""User prompt: {user_prompt} \nPrompt tokens: {response.usage_metadata.prompt_token_count} \nResponse tokens: {response.usage_metadata.candidates_token_count}""")
-    else:
-        print(response.text)
+            if response.function_calls:
+                for function in response.function_calls:
+                    result = call_function(function, is_verbose)
+                    function_response_message = types.Content(
+                        role="tool",
+                        parts=[result.parts[0]]
+                    )
+                    messages.append(function_response_message)
+                    if (result and
+                    result.parts and
+                    len(result.parts) > 0 and
+                    hasattr(result.parts[0], 'function_response') and
+                    hasattr(result.parts[0].function_response, 'response')):
+                        if is_verbose:
+                            print(f"-> {result.parts[0].function_response.response}")
+                    else:
+                        raise Exception("Unexpected function call result structure!")
+
+                if is_verbose:
+                    print(f"""User prompt: {user_prompt} \nPrompt tokens: {response.usage_metadata.prompt_token_count} \nResponse tokens: {response.usage_metadata.candidates_token_count}""")
+            else:
+                print(response.text)
+                break
+                
+            i += 1
+            if not response.function_calls and response.text:
+                print(f"Final response: {response.text}")
+                break
+           
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            sys.exit(1)
 
